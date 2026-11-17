@@ -47,10 +47,21 @@
         // ---------- ระบบเสียง ----------
     let audioCtx = null;
 
+    // หาเสียงพูดภาษาไทยในเครื่อง
+    let thaiVoice = null;
+    function loadVoices() {
+      thaiVoice = speechSynthesis.getVoices()
+        .find(v => v.lang.replace('_', '-').toLowerCase().startsWith('th')) || null;
+    }
+    loadVoices();
+    speechSynthesis.onvoiceschanged = loadVoices;
+
     function enableSound() {
       audioCtx = new AudioContext();
+      audioCtx.resume();
       document.getElementById('soundBtn').textContent = '🔊 เปิดเสียงแล้ว';
       chime(); // เล่นเสียงทดสอบ
+      speak('เปิดเสียงแล้วค่ะ'); // ต้องพูดครั้งแรกตอนกดปุ่ม iPhone/iPad ถึงจะยอมให้พูดครั้งต่อไป
     }
 
     // เสียงกริ่ง ติ๊ง-ด่อง
@@ -73,8 +84,10 @@
     // เสียงพูดเรียกคิว
     function speak(text) {
       if (!audioCtx) return;
+      speechSynthesis.cancel();
       const msg = new SpeechSynthesisUtterance(text);
       msg.lang = 'th-TH';
+      if (thaiVoice) msg.voice = thaiVoice;
       msg.rate = 0.9;
       speechSynthesis.speak(msg);
     }
