@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>จอเรียกคิว</title>
+  <style>
+    body { font-family: sans-serif; background: #2b1d14; color: white; text-align: center; }
+    #ready { font-size: 40px; }
+    #popup {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.85);
+      justify-content: center; align-items: center; flex-direction: column;
+      font-size: 60px;
+    }
+    #popup b { font-size: 140px; color: #ffd166; }
+  </style>
+</head>
+<body>
+      <button id="soundBtn" onclick="enableSound()"
+    style="font-size:24px;padding:14px 24px;margin-top:20px;border-radius:12px;border:none;background:#ffd166;">
+    🔊 กดเพื่อเปิดเสียง
+  </button>
+  <h1>🔔 ออเดอร์ที่เสร็จแล้ว</h1>
+  <div id="ready"></div>
+
+  <div id="popup">
+    <div>คิว</div>
+    <b id="popupNumber"></b>
+    <div id="popupDrink"></div>
+    <div>เสร็จแล้ว! ☕</div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+
+    // แสดงเลขคิวที่เสร็จแล้วทั้งหมด
+    socket.on('orders', (orders) => {
+      document.getElementById('ready').innerHTML = orders
+        .filter(o => o.done)
+        .map(o => `#${o.number}`)
+        .join(' &nbsp; ');
+    });
+
+    // เด้งป๊อปอัปเต็มจอ 4 วินาที
+        // ---------- ระบบเสียง ----------
+    let audioCtx = null;
+
+    function enableSound() {
+      audioCtx = new AudioContext();
+      document.getElementById('soundBtn').textContent = '🔊 เปิดเสียงแล้ว';
+      chime(); // เล่นเสียงทดสอบ
+    }
+
+    // เสียงกริ่ง ติ๊ง-ด่อง
+    function chime() {
+      if (!audioCtx) return;
+      [880, 660].forEach((freq, i) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.frequency.value = freq;
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        const start = audioCtx.currentTime + i * 0.4;
+        gain.gain.setValueAtTime(0.4, start);
+        gain.gain.exponentialRampToValueAtTime(0.001, start + 0.6);
+        osc.start(start);
+        osc.stop(start + 0.6);
+      });
+    }
+
+    // เสียงพูดเรียกคิว
+    function speak(text) {
+      if (!audioCtx) return;
+      const msg = new SpeechSynthesisUtterance(text);
+      msg.lang = 'th-TH';
+      msg.rate = 0.9;
+      speechSynthesis.speak(msg);
+    }
+
+    // เด้งป๊อปอัปเต็มจอ 4 วินาที + เล่นเสียง
+    socket.on('ready', (order) => {
+      document.getElementById('popupNumber').textContent = '#' + order.number;
+      document.getElementById('popupDrink').textContent = order.drink;
+      const popup = document.getElementById('popup');
+      popup.style.display = 'flex';
+      setTimeout(() => popup.style.display = 'none', 4000);
+
+      chime();
+      setTimeout(() => {
+        speak(`คิวที่ ${order.number} ${order.drink} เสร็จแล้วค่ะ`);
+      }, 900);
+    });
+  </script>
+</body>
+</html>

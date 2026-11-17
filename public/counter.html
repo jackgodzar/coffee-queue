@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>เคาน์เตอร์</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; background: #fdf6ec; }
+    button {
+      font-size: 22px; padding: 20px; margin: 8px;
+      border: none; border-radius: 12px;
+      background: #6f4e37; color: white;
+    }
+    li { font-size: 22px; margin: 6px 0; }
+  </style>
+</head>
+<body>
+  <h1>☕ เคาน์เตอร์รับออเดอร์</h1>
+
+  <button onclick="order('อเมริกาโน่')">อเมริกาโน่</button>
+  <button onclick="order('ลาเต้')">ลาเต้</button>
+  <button onclick="order('ชาเย็น')">ชาเย็น</button>
+
+  <h2>ออเดอร์ทั้งหมด</h2>
+  <ul id="list"></ul>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+
+    function order(drink) {
+      socket.emit('newOrder', drink);
+    }
+        function done(number) {
+      socket.emit('orderDone', number);
+    }
+
+    socket.on('orders', (orders) => {
+      document.getElementById('list').innerHTML = orders
+        .map(o => `<li>คิว #${o.number} — ${o.drink}
+          ${o.done
+            ? '✅ เสร็จแล้ว'
+            : `<button style="font-size:16px;padding:8px 14px" onclick="done(${o.number})">เสร็จ</button>`}
+        </li>`)
+        .join('');
+    });
+  </script>
+</body>
+</html>
